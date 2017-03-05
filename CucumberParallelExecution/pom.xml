@@ -12,11 +12,17 @@
 			<scope>system</scope>
 			<systemPath>C:\Program Files\Java\jdk1.8.0_121\lib\tools.jar</systemPath>
 		</dependency>
+		 <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-java</artifactId>
+            <version>2.53.1</version>
+        </dependency>
+    
 
 		<dependency>
 			<groupId>info.cukes</groupId>
 			<artifactId>cucumber-java</artifactId>
-			<version>1.1.5</version>
+			<version>1.2.5</version>
 			<scope>test</scope>
 		</dependency>
 
