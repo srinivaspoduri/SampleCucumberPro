@@ -213,5 +213,96 @@ public class C {
 </project>
 echo "Running ant all.."
 /usr/share/ant/bin/ant  $XML_To_Execute 
+		
+		-------------------------------------------------------------------------------
+		
+		package com.verizon.oneplan.jbehaveexecutor;
+
+import static org.jbehave.core.io.CodeLocations.codeLocationFromClass;
+import static org.jbehave.core.reporters.Format.CONSOLE;
+import static org.jbehave.core.reporters.Format.HTML;
+
+import java.util.Arrays;
+import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
+import org.jbehave.core.Embeddable;
+import org.jbehave.core.configuration.Configuration;
+import org.jbehave.core.configuration.MostUsefulConfiguration;
+import org.jbehave.core.embedder.Embedder;
+import org.jbehave.core.embedder.StoryControls;
+import org.jbehave.core.embedder.StoryTimeouts.TimeoutParser;
+import org.jbehave.core.io.CodeLocations;
+import org.jbehave.core.io.LoadFromClasspath;
+import org.jbehave.core.io.StoryFinder;
+import org.jbehave.core.junit.JUnitStories;
+import org.jbehave.core.reporters.StoryReporterBuilder;
+import org.jbehave.core.steps.InjectableStepsFactory;
+import org.jbehave.core.steps.InstanceStepsFactory;
+
+import com.verizon.oneplan.steps.commonsteps.GenericSteps;
+import com.verizon.oneplan.steps.fios.FiOS_Service_Actuals_Report;
+import com.verizon.oneplan.steps.fios.FiOS_WC_Relationship;
+import com.verizon.oneplan.steps.fios.FiOS_WC_Splitter;
+
+public class JbehaveExecutor extends JUnitStories {
+
+	public JbehaveExecutor() {
+		Embedder embedder = configuredEmbedder();
+		System.out.println("number of threads Before" + embedder.embedderControls().threads());
+
+		embedder.embedderControls().doGenerateViewAfterStories(true).doIgnoreFailureInStories(true)
+				.doIgnoreFailureInView(true).doVerboseFiltering(true).useStoryTimeouts("7secs")
+				.doFailOnStoryTimeout(false);
+		embedder.useMetaFilters(Arrays.asList("groovy: story_path ==~ /.*long.*/"));
+		embedder.useTimeoutParsers(new CustomTimeoutParser());
+		System.out.println("number of threads After" + embedder.embedderControls().threads());
+
+	}
+
+	@Override
+	public Configuration configuration() {
+		Class<? extends Embeddable> embeddableClass = this.getClass();
+		return new MostUsefulConfiguration().useStoryLoader(new LoadFromClasspath(embeddableClass))
+				.useStoryControls(new StoryControls().useStoryMetaPrefix("story_").useScenarioMetaPrefix("scenario_")) // optional
+																														// prefixes
+				.useStoryReporterBuilder(new StoryReporterBuilder()
+						.withCodeLocation(CodeLocations.codeLocationFromClass(embeddableClass)).withDefaultFormats()
+						.withFormats(CONSOLE, HTML).withFailureTrace(true).withFailureTraceCompression(true));
+	}
+
+	@Override
+	public InjectableStepsFactory stepsFactory() {
+		return new InstanceStepsFactory(configuration(), new GenericSteps(), new FiOS_WC_Relationship(),
+				new FiOS_WC_Splitter(), new FiOS_Service_Actuals_Report());
+	}
+
+	@Override
+	protected List<String> storyPaths() {
+		System.out.println("stories.to.execute value from POM file :" + System.getProperty("stories.to.execute"));
+
+		if (System.getProperty("stories.to.execute") == null) {
+			return new StoryFinder().findPaths(codeLocationFromClass(this.getClass()), "**/FIOS_WC_Splitter.story", "");
+		} else {
+			return new StoryFinder().findPaths(codeLocationFromClass(this.getClass()),
+					System.getProperty("stories.to.execute"), "");
+		}
+	}
+
+	public static class CustomTimeoutParser implements TimeoutParser {
+
+		public boolean isValid(String timeout) {
+			return timeout.matches("(\\d+)secs");
+		}
+
+		public long asSeconds(String timeout) {
+			return Long.parseLong(StringUtils.substringBefore(timeout, "secs"));
+		}
+
+	}
+
+}
+
+		
 
 }
